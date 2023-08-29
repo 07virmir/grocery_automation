@@ -12,7 +12,8 @@ def calculate_totals():
 
     scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('sheets_credentials.json', scope)
+    credentials_path = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'sheets_credentials.json')
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
     client = gspread.authorize(credentials)
 
     sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1pSb1irU-GRNh8PEHjCbcgc3bfW_WjxRm5XmYZ-bSdpI/edit#gid=0')
