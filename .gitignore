@@ -1,2 +1,4 @@
 .env
-credentials.json
+sheets_credentials.json
+firebase_credentials.json
+```

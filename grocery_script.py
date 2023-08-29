@@ -10,53 +10,9 @@ def calculate_totals():
     Calculates the total amount each person owes for the groceries
     """
 
-    def make_splitwise_request(totals_per_person: dict):
-        """
-        Makes a request to the Splitwise API to create a new expense
-        """
-        load_dotenv()
-        s_obj = Splitwise(os.environ.get("CONSUMER_KEY"),os.environ.get("CONSUMER_SECRET"),api_key=os.environ.get("API_KEY"))
-        user_ids = {"Viren": s_obj.getCurrentUser().getId()}
-        friends = s_obj.getFriends()
-        for friend in friends:
-            name = friend.getFirstName()
-            if name == "Rishi":
-                user_ids["Rishi"] = friend.getId()
-            elif name == "Siddharth":
-                user_ids["Siddharth"] = friend.getId()
-            elif name == "Rohan":
-                user_ids["Rohan"] = friend.getId()
-            elif name == "Christopher":
-                user_ids["Christopher"] = friend.getId()
-            
-        for person in user_ids:
-            if person == "Viren":
-                continue
-            expense = Expense()
-            expense.setCost(totals_per_person[person])
-            expense.setDescription("Groceries " + str(datetime.datetime.now().date()))
-
-            requester = ExpenseUser()
-            requester.setId(user_ids["Viren"])
-            requester.setPaidShare(totals_per_person[person])
-            requester.setOwedShare(0)
-
-            payer = ExpenseUser()
-            payer.setId(user_ids[person])
-            payer.setPaidShare(0)
-            payer.setOwedShare(totals_per_person[person])
-
-            expense.addUser(requester)
-            expense.addUser(payer)
-            s_obj.createExpense(expense)
-
-            print(f"Created expense for {person} for ${totals_per_person[person]}")
-        
-        print("\n")
-
     scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('sheets_credentials.json', scope)
     client = gspread.authorize(credentials)
 
     sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1pSb1irU-GRNh8PEHjCbcgc3bfW_WjxRm5XmYZ-bSdpI/edit#gid=0')
@@ -113,6 +69,50 @@ def calculate_totals():
     print(f"Totals: {totals_per_person}" + "\n")
 
     make_splitwise_request(totals_per_person)
+
+def make_splitwise_request(totals_per_person: dict):
+        """
+        Makes a request to the Splitwise API to create a new expense
+        """
+        load_dotenv()
+        s_obj = Splitwise(os.environ.get("CONSUMER_KEY"),os.environ.get("CONSUMER_SECRET"),api_key=os.environ.get("API_KEY"))
+        user_ids = {"Viren": s_obj.getCurrentUser().getId()}
+        friends = s_obj.getFriends()
+        for friend in friends:
+            name = friend.getFirstName()
+            if name == "Rishi":
+                user_ids["Rishi"] = friend.getId()
+            elif name == "Siddharth":
+                user_ids["Siddharth"] = friend.getId()
+            elif name == "Rohan":
+                user_ids["Rohan"] = friend.getId()
+            elif name == "Christopher":
+                user_ids["Christopher"] = friend.getId()
+            
+        for person in user_ids:
+            if person == "Viren":
+                continue
+            expense = Expense()
+            expense.setCost(totals_per_person[person])
+            expense.setDescription("Groceries " + str(datetime.datetime.now().date()))
+
+            requester = ExpenseUser()
+            requester.setId(user_ids["Viren"])
+            requester.setPaidShare(totals_per_person[person])
+            requester.setOwedShare(0)
+
+            payer = ExpenseUser()
+            payer.setId(user_ids[person])
+            payer.setPaidShare(0)
+            payer.setOwedShare(totals_per_person[person])
+
+            expense.addUser(requester)
+            expense.addUser(payer)
+            s_obj.createExpense(expense)
+
+            print(f"Created expense for {person} for ${totals_per_person[person]}")
+        
+        print("\n")
 
 if __name__ == "__main__":
     calculate_totals()
