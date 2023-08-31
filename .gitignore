@@ -1,4 +1,4 @@
 .env
-sheets_credentials.json
-firebase_credentials.json
-```
+.venv/
+src/__pycache__/
+credentials/

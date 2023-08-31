@@ -1,43 +1,59 @@
-from flask import Flask, request, session
-import firebase_admin, requests, os
+from flask import Flask, jsonify, request, session
+from datetime import datetime, timedelta
+import firebase_admin, requests, os, sys
 from firebase_admin import credentials, firestore
-from src.utils import get_access_token
+from utils import get_kroger_access_token
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
-credentials_path = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'firebase_credentials.json')
-cred = credentials.Certificate(credentials_path)
-firebase_admin.initialize_app(cred)
+# credentials_path = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'firebase_credentials.json')
+# cred = credentials.Certificate(credentials_path)
+# firebase_admin.initialize_app(cred)
 
-db = firestore.client()
+# db = firestore.client()
 
-@app.route("/")
-def initialize():
-    session['token'] = get_access_token()
+access_token = None
+expiry_time = None
+data = []
+members = ["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"]
 
-@app.route("/load_data", methods=['GET'])
-def load_data():
+def set_access_token():
+    global access_token, expiry_time
+    api_result = get_kroger_access_token()
+    access_token = api_result["access_token"]
+    expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
+
+@app.route("/refresh_token")
+def init():
     """
-    Loads the data from the database
+    Initializes the token
     """
+    global access_token, expiry_time
+    if expiry_time is None or datetime.now() > expiry_time:
+        set_access_token()
 
-    doc_ref = db.collection('items').document('E9TdIqXvP936dlNmJBaO')
-    doc = doc_ref.get()
-
-@app.route("/update_data", methods=['POST'])
-def update_data():
+@app.route("/get_items", methods=['GET'])
+def get_items():
     """
-    Updates the data in the database
+    Returns the list of items
     """
+    info = {
+        "data": data,
+        "members": members
+        }
+    return jsonify(info)
 
-    doc_ref = db.collection('items').document('E9TdIqXvP936dlNmJBaO')
-    doc = doc_ref.get()
-
-    data = doc.to_dict()
-
-    data['items']['bread'] = 1
-
-    doc_ref.set(data)
+@app.route("/save_changes", methods=['POST'])
+def save_changes():
+    """
+    Saves the changes to the backend
+    """
+    global data
+    data = request.get_json()["data"]
+    
+    return "", 204
 
 @app.route("/search_kroger", methods=['GET'])
 def search_kroger():
@@ -45,7 +61,7 @@ def search_kroger():
     Searches the Kroger API for the item
     """
 
-    access_token = get_access_token()
+    access_token = get_kroger_access_token()
 
     item = request.args.get('item')
     locationId = session.get('locationId')
@@ -74,7 +90,7 @@ def get_locations():
         Gets the nearest locations for the specified zip code
         """
 
-        access_token = get_access_token()
+        access_token = get_kroger_access_token()
 
         zip_code = request.args.get('zip_code')
 
@@ -96,26 +112,5 @@ def get_locations():
         else: 
             return None
 
-@app.route("/update_location", methods=['POST'])
-def update_location():
-        """
-        Updates the location in the database
-        """
-
-        locationId = request.form.get('locationId')
-        address = request.form.get('address')
-
-        session['locationId'] = locationId
-
-        doc_ref = db.collection('items').document('location')
-        doc = doc_ref.get()
-
-        data = doc.to_dict()
-
-        data['locationInfo']['id'] = locationId
-        data['locationInfo']['address'] = address
-
-        doc_ref.set(data)
-
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5000)
