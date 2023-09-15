@@ -25,7 +25,7 @@ def set_access_token():
     access_token = api_result["access_token"]
     expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
 
-@app.route("/refresh_token")
+@app.route("/refresh_token", methods=['POST'])
 def init():
     """
     Initializes the token
@@ -33,6 +33,7 @@ def init():
     global access_token, expiry_time
     if expiry_time is None or datetime.now() > expiry_time:
         set_access_token()
+    return "", 204
 
 @app.route("/get_items", methods=['GET'])
 def get_items():
@@ -61,28 +62,39 @@ def search_kroger():
     Searches the Kroger API for the item
     """
 
-    access_token = get_kroger_access_token()
+    requests.post("http://127.0.0.1:5000/refresh_token")
 
     item = request.args.get('item')
-    locationId = session.get('locationId')
+    locationId = request.args.get('locationId')
 
-    url = f"https://api.kroger.com/v1/products?filter.term={item}&filter.locationId={locationId}&filter.fulfillment=csp&filter.limit=5"
+    url = f"https://api.kroger.com/v1/products"
 
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {access_token}"
     }
+    params = {
+            "filter.term": item,
+            "filter.locationId": locationId,
+            "filter.fulfillment": "csp",
+            "filter.limit": 6
+        }
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, params=params)
 
     if response.status_code == 200:
         response = response.json()
         item_info = {}
 
         for item in response["data"]:
-            item_info[item["productId"]] = item["description"]
-        return item_info
-
+            item_info[item["productId"]] = {}
+            item_info[item["productId"]]["description"] = item["description"]
+            item_info[item["productId"]]["price"] = min(item["items"][0]["price"]["regular"], item["items"][0]["price"]["promo"]) if item["items"][0]["price"]["promo"] != 0 else item["items"][0]["price"]["regular"]
+            item_info[item["productId"]]["image"] = item["images"][0]["sizes"][2]["url"]
+            item_info[item["productId"]]["size"] = item["items"][0]["size"]
+        return jsonify(item_info)
+    else:
+        return None
 
 @app.route("/get_locations", methods=['GET'])
 def get_locations():
@@ -90,27 +102,33 @@ def get_locations():
         Gets the nearest locations for the specified zip code
         """
 
-        access_token = get_kroger_access_token()
+        requests.post("http://127.0.0.1:5000/refresh_token")
 
         zip_code = request.args.get('zip_code')
 
-        url = f"https://api.kroger.com/v1/locations?filter.zipCode.near={zip_code}&filter.limit=5"
+        url = f"https://api.kroger.com/v1/locations"
         headers = {
             "Accept": "application/json",
             "Authorization": f"Bearer {access_token}"
         }
+        params = {
+            "filter.zipCode.near": zip_code,
+            "filter.limit": 6
+        }
 
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, params=params)
 
         if response.status_code == 200:
             response = response.json()
             location_info = {}
 
             for location in response["data"]:
-                location_info[location["locationId"]] = location["address"]["addressLine1"] + ", " + location["address"]["city"] + ", " + location["address"]["state"] + " " + location["address"]["zipCode"]
-            return location_info
+                location_info[location["locationId"]] = {}
+                location_info[location["locationId"]]["address"] = location["address"]["addressLine1"] + ", " + location["address"]["city"] + ", " + location["address"]["state"] + " " + location["address"]["zipCode"]
+                location_info[location["locationId"]]["name"] = location["name"]
+            return jsonify(location_info)
         else: 
             return None
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    app.run(port=5000, debug=True)
