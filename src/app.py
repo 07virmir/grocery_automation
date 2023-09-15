@@ -67,23 +67,34 @@ def search_kroger():
     item = request.args.get('item')
     locationId = request.args.get('locationId')
 
-    url = f"https://api.kroger.com/v1/products?filter.term={item}&filter.locationId={locationId}&filter.fulfillment=csp&filter.limit=5"
+    url = f"https://api.kroger.com/v1/products"
 
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {access_token}"
     }
+    params = {
+            "filter.term": item,
+            "filter.locationId": locationId,
+            "filter.fulfillment": "csp",
+            "filter.limit": 6
+        }
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, params=params)
 
     if response.status_code == 200:
         response = response.json()
         item_info = {}
 
         for item in response["data"]:
-            item_info[item["productId"]] = item["description"]
-        return item_info
-
+            item_info[item["productId"]] = {}
+            item_info[item["productId"]]["description"] = item["description"]
+            item_info[item["productId"]]["price"] = min(item["items"][0]["price"]["regular"], item["items"][0]["price"]["promo"]) if item["items"][0]["price"]["promo"] != 0 else item["items"][0]["price"]["regular"]
+            item_info[item["productId"]]["image"] = item["images"][0]["sizes"][2]["url"]
+            item_info[item["productId"]]["size"] = item["items"][0]["size"]
+        return jsonify(item_info)
+    else:
+        return None
 
 @app.route("/get_locations", methods=['GET'])
 def get_locations():
@@ -102,7 +113,7 @@ def get_locations():
         }
         params = {
             "filter.zipCode.near": zip_code,
-            "filter.limit": 3
+            "filter.limit": 6
         }
 
         response = requests.get(url, headers=headers, params=params)

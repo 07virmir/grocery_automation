@@ -9,6 +9,7 @@ def add_to_cart_script(table):
     """
     Adds the items to the cart
     """
+    pass
 
 def post_order_script(table, tax):
     """
@@ -39,8 +40,6 @@ def post_order_script(table, tax):
             items_per_person["Rohan"][row["name"]] = amount
         if chris_included:
             items_per_person["Christopher"][row["name"]] = amount
-
-        row_idx += 1
 
     for person in items_per_person:
         totals_per_person[person] = sum(items_per_person[person].values())
