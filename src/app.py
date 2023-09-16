@@ -1,18 +1,14 @@
 from flask import Flask, jsonify, request, redirect, url_for
 from authlib.integrations.flask_client import OAuth
 from datetime import datetime, timedelta
-import firebase_admin, requests, os, sys
-from firebase_admin import credentials, firestore
+import requests, os
 from utils import get_kroger_access_token
 from flask_cors import CORS
 from dotenv import load_dotenv
-from localStoragePy import localStoragePy
 
 app = Flask(__name__)
 CORS(app)
 app.secret_key = 'test'
-
-localStorage = localStoragePy('groceryapp', 'json')
 
 load_dotenv()
 oauth = OAuth(app)
@@ -75,7 +71,7 @@ def authorize():
     global add_to_cart_token
     add_to_cart_token = oauth.kroger.authorize_access_token()["access_token"]
     add_to_cart_script()
-    return redirect('http://localhost:8501')
+    return "Order added to cart"
 
 @app.route("/refresh_token", methods=['POST'])
 def refresh_token():

@@ -4,7 +4,6 @@ import numpy as np
 from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
-from authlib.integrations.requests_client import OAuth2Session
 
 def post_order_script(table, tax, savings):
     """
@@ -16,12 +15,12 @@ def post_order_script(table, tax, savings):
 
     for _, row in table.iterrows():
 
-        item_cost = row["price"]
+        item_cost = float(row["price"]) * int(row["quantity"])
 
         viren_included, rishi_included, sid_included, rohan_included, chris_included = row["Viren"], row["Rishi"], row["Siddharth"], row["Rohan"], row["Christopher"]
         boolean_list = [viren_included, rishi_included, sid_included, rohan_included, chris_included]
 
-        split = sum(sum([1 for name in boolean_list if name]))
+        split = sum([1 for name in boolean_list if name])
 
         amount = math.ceil((item_cost / split) * 100) / 100
 
@@ -42,8 +41,10 @@ def post_order_script(table, tax, savings):
     total = sum(totals_per_person.values())
 
     for person in totals_per_person:
-        tax_added = (totals_per_person[person] / total) * tax
+        tax_added = (totals_per_person[person] / total) * float(tax)
+        savings_subtracted = (totals_per_person[person] / total) * float(savings)
         totals_per_person[person] += tax_added
+        totals_per_person[person] -= savings_subtracted
         totals_per_person[person] = math.ceil(totals_per_person[person] * 100) / 100
 
     print("\n")
@@ -60,7 +61,7 @@ def make_splitwise_request(totals_per_person: dict):
         Makes a request to the Splitwise API to create a new expense
         """
         load_dotenv()
-        s_obj = Splitwise(os.environ.get("CONSUMER_KEY"),os.environ.get("CONSUMER_SECRET"),api_key=os.environ.get("API_KEY"))
+        s_obj = Splitwise(os.environ.get("SPLITWISE_CONSUMER_KEY"),os.environ.get("SPLITWISE_CONSUMER_SECRET"),api_key=os.environ.get("SPLITWISE_API_KEY"))
         user_ids = {"Viren": s_obj.getCurrentUser().getId()}
         friends = s_obj.getFriends()
         for friend in friends:

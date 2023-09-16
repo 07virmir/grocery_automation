@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_extras.row import row
-import requests, json
+import requests
 from utils import make_df, save_data, post_order_script
 import webbrowser
 
