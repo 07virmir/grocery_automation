@@ -46,8 +46,6 @@ def add_to_cart_script():
     Adds the items to the cart
     """
     global data
-    print(data)
-    print(add_to_cart_token)
     items = {"items": []}
     for item in data:
         items["items"].append({
@@ -61,11 +59,7 @@ def add_to_cart_script():
         "Content-Type": "application/json",
         "Authorization": f"Bearer {add_to_cart_token}"
     }
-    response = requests.put(url=url, headers=headers, json=items)
-    if response.status_code == 200:
-        print("Added item to cart")
-    else:
-        print("Error adding item to cart")
+    requests.put(url=url, headers=headers, json=items)
 
 @app.route("/")
 def home():
