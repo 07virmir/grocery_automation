@@ -5,13 +5,7 @@ from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
 
-def add_to_cart_script(table):
-    """
-    Adds the items to the cart
-    """
-    pass
-
-def post_order_script(table, tax):
+def post_order_script(table, tax, savings):
     """
     Calulates the totals and posts the order to Splitwise
     """
@@ -21,12 +15,12 @@ def post_order_script(table, tax):
 
     for _, row in table.iterrows():
 
-        item_cost = row["price"]
+        item_cost = float(row["price"]) * int(row["quantity"])
 
         viren_included, rishi_included, sid_included, rohan_included, chris_included = row["Viren"], row["Rishi"], row["Siddharth"], row["Rohan"], row["Christopher"]
         boolean_list = [viren_included, rishi_included, sid_included, rohan_included, chris_included]
 
-        split = sum(sum([1 for name in boolean_list if name]))
+        split = sum([1 for name in boolean_list if name])
 
         amount = math.ceil((item_cost / split) * 100) / 100
 
@@ -47,8 +41,10 @@ def post_order_script(table, tax):
     total = sum(totals_per_person.values())
 
     for person in totals_per_person:
-        tax_added = (totals_per_person[person] / total) * tax
+        tax_added = (totals_per_person[person] / total) * float(tax)
+        savings_subtracted = (totals_per_person[person] / total) * float(savings)
         totals_per_person[person] += tax_added
+        totals_per_person[person] -= savings_subtracted
         totals_per_person[person] = math.ceil(totals_per_person[person] * 100) / 100
 
     print("\n")
@@ -65,7 +61,7 @@ def make_splitwise_request(totals_per_person: dict):
         Makes a request to the Splitwise API to create a new expense
         """
         load_dotenv()
-        s_obj = Splitwise(os.environ.get("CONSUMER_KEY"),os.environ.get("CONSUMER_SECRET"),api_key=os.environ.get("API_KEY"))
+        s_obj = Splitwise(os.environ.get("SPLITWISE_CONSUMER_KEY"),os.environ.get("SPLITWISE_CONSUMER_SECRET"),api_key=os.environ.get("SPLITWISE_API_KEY"))
         user_ids = {"Viren": s_obj.getCurrentUser().getId()}
         friends = s_obj.getFriends()
         for friend in friends:
@@ -138,14 +134,14 @@ def make_df(items, members):
     Returns: 
         pd.Dataframe: with item id as index column. Forces use of hide_index in st.data_editor
     '''
-    additional_cols = 3
+    additional_cols = 4
     member_to_idx = {name: i + additional_cols for i,
                      name in enumerate(members)}
     table = np.zeros(shape=(len(items), len(members) +
                      additional_cols), dtype=object)
     table[additional_cols:] = table[additional_cols:] != 0
     for i, item in enumerate(items):
-        table[i][:3] = item['id'], item['name'], item['price']
+        table[i][:4] = item['id'], item['name'], item['price'], item['quantity']
         for member in members:
             idx = member_to_idx[member]
             if member in item['split_by']:
@@ -153,9 +149,9 @@ def make_df(items, members):
             else:
                 table[i][idx] = False
 
-    return pd.DataFrame(table, columns=['id', 'name', 'price'] + members)
+    return pd.DataFrame(table, columns=['id', 'name', 'price', 'quantity'] + members)
 
-def save_data(table):
+def save_data(table, location_id):
     """
     Saves the data to the backend
     """
@@ -165,12 +161,12 @@ def save_data(table):
         data.append({})
         data[i]['split_by'] = []
         for j, (val, col_name) in enumerate(zip(row, table.columns.tolist())):
-            if j < 3:
+            if j < 4:
                 data[i][col_name] = val
             else:
                 if val:
                     data[i]['split_by'].append(col_name)
-    info = {"data": data}
+    info = {"data": data, "locationId": location_id}
     headers = {"Content-Type": "application/json"}
-    requests.post("http://127.0.0.1:5000/save_changes", data=json.dumps(info), headers=headers)
+    requests.post("http://127.0.0.1:8000/save_changes", data=json.dumps(info), headers=headers)
      
