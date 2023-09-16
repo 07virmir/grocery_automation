@@ -4,14 +4,9 @@ import numpy as np
 from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
+from authlib.integrations.requests_client import OAuth2Session
 
-def add_to_cart_script(table):
-    """
-    Adds the items to the cart
-    """
-    pass
-
-def post_order_script(table, tax):
+def post_order_script(table, tax, savings):
     """
     Calulates the totals and posts the order to Splitwise
     """
@@ -138,14 +133,14 @@ def make_df(items, members):
     Returns: 
         pd.Dataframe: with item id as index column. Forces use of hide_index in st.data_editor
     '''
-    additional_cols = 3
+    additional_cols = 4
     member_to_idx = {name: i + additional_cols for i,
                      name in enumerate(members)}
     table = np.zeros(shape=(len(items), len(members) +
                      additional_cols), dtype=object)
     table[additional_cols:] = table[additional_cols:] != 0
     for i, item in enumerate(items):
-        table[i][:3] = item['id'], item['name'], item['price']
+        table[i][:4] = item['id'], item['name'], item['price'], item['quantity']
         for member in members:
             idx = member_to_idx[member]
             if member in item['split_by']:
@@ -153,9 +148,9 @@ def make_df(items, members):
             else:
                 table[i][idx] = False
 
-    return pd.DataFrame(table, columns=['id', 'name', 'price'] + members)
+    return pd.DataFrame(table, columns=['id', 'name', 'price', 'quantity'] + members)
 
-def save_data(table):
+def save_data(table, location_id):
     """
     Saves the data to the backend
     """
@@ -165,12 +160,12 @@ def save_data(table):
         data.append({})
         data[i]['split_by'] = []
         for j, (val, col_name) in enumerate(zip(row, table.columns.tolist())):
-            if j < 3:
+            if j < 4:
                 data[i][col_name] = val
             else:
                 if val:
                     data[i]['split_by'].append(col_name)
-    info = {"data": data}
+    info = {"data": data, "locationId": location_id}
     headers = {"Content-Type": "application/json"}
-    requests.post("http://127.0.0.1:5000/save_changes", data=json.dumps(info), headers=headers)
+    requests.post("http://127.0.0.1:8000/save_changes", data=json.dumps(info), headers=headers)
      
