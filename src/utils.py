@@ -4,6 +4,13 @@ import numpy as np
 from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
+import webbrowser
+
+def authenticate():
+    """
+    Adds the items to the cart
+    """
+    webbrowser.open("http://127.0.0.1:8000")
 
 def post_order_script(table, tax, savings):
     """
@@ -169,4 +176,11 @@ def save_data(table, location_id):
     info = {"data": data, "locationId": location_id}
     headers = {"Content-Type": "application/json"}
     requests.post("http://127.0.0.1:8000/save_changes", data=json.dumps(info), headers=headers)
+
+def add_row(df, location_id, id, description, price, person):
+    newRow = {"id": [id], "name": [description], "price": [price], "quantity": [1], "Viren": [True if person =='Viren' else False], "Rishi": [True if person =='Rishi' else False], "Siddharth": [True if person =='Siddharth' else False], "Rohan": [True if person =='Rohan' else False], "Christopher": [True if person =='Christopher' else False]}
+    df2 = pd.DataFrame(newRow)
+    df = pd.concat([df, df2], ignore_index=True)
+    df.reset_index()
+    save_data(df, location_id)
      

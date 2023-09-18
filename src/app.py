@@ -116,6 +116,7 @@ def search_kroger():
 
     item = request.args.get('item')
     locationId = request.args.get('locationId')
+    limit = request.args.get('limit')
 
     url = f"https://api.kroger.com/v1/products"
 
@@ -127,7 +128,7 @@ def search_kroger():
             "filter.term": item,
             "filter.locationId": locationId,
             "filter.fulfillment": "csp",
-            "filter.limit": 6
+            "filter.limit": limit
         }
 
     response = requests.get(url, headers=headers, params=params)
@@ -136,12 +137,13 @@ def search_kroger():
         response = response.json()
         item_info = {}
 
-        for item in response["data"]:
-            item_info[item["upc"]] = {}
-            item_info[item["upc"]]["description"] = item["description"]
-            item_info[item["upc"]]["price"] = min(item["items"][0]["price"]["regular"], item["items"][0]["price"]["promo"]) if item["items"][0]["price"]["promo"] != 0 else item["items"][0]["price"]["regular"]
-            item_info[item["upc"]]["image"] = item["images"][0]["sizes"][2]["url"]
-            item_info[item["upc"]]["size"] = item["items"][0]["size"]
+        for idx, item in enumerate(response["data"]):
+            item_info[idx] = {}
+            item_info[idx]["id"] = item["upc"]
+            item_info[idx]["description"] = item["description"]
+            item_info[idx]["price"] = min(item["items"][0]["price"]["regular"], item["items"][0]["price"]["promo"]) if item["items"][0]["price"]["promo"] != 0 else item["items"][0]["price"]["regular"]
+            item_info[idx]["image"] = item["images"][0]["sizes"][2]["url"]
+            item_info[idx]["size"] = item["items"][0]["size"]
         return jsonify(item_info)
     else:
         return None
