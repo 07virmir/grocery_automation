@@ -10,13 +10,14 @@ def calculate_totals():
     Calculates the total amount each person owes for the groceries
     """
 
+    load_dotenv()
     scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
     credentials_path = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'sheets_credentials.json')
     credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
     client = gspread.authorize(credentials)
 
-    sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1pSb1irU-GRNh8PEHjCbcgc3bfW_WjxRm5XmYZ-bSdpI/edit#gid=0')
+    sheet = client.open_by_url(os.environ.get("SHEETS_URL"))
     worksheet = sheet.get_worksheet(0)
 
     items_per_person = {"Viren": {}, "Rishi": {}, "Siddharth": {}, "Rohan": {}, "Christopher": {}}
@@ -90,7 +91,7 @@ def make_splitwise_request(totals_per_person: dict):
         """
         Makes a request to the Splitwise API to create a new expense
         """
-        load_dotenv("../.env")
+        load_dotenv()
         s_obj = Splitwise(os.environ.get("SPLITWISE_CONSUMER_KEY"),os.environ.get("SPLITWISE_CONSUMER_SECRET"),api_key=os.environ.get("SPLITWISE_API_KEY"))
         user_ids = {"Viren": s_obj.getCurrentUser().getId()}
         friends = s_obj.getFriends()
