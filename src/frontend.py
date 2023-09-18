@@ -74,7 +74,7 @@ if location_id:
                     """
                 item_row.markdown(item_html, unsafe_allow_html=True)
                 with buttons[j * 3 + 1]:
-                    st.button(f"Add Item {3 * i + j + 1}", on_click=add_row, args=(df,location_id,id,description,price,person,))
+                    st.button(f"Add Item {3 * i + j + 1}", on_click=add_row, args=(df,location_id,id,description,size,price,person,))
         if length % 3 > 0:
             item_row = row(length % 3, vertical_align="center")
             buttons = st.columns([1, 1, 2, 1, 2, 1, 2, 1, 1])
@@ -94,10 +94,10 @@ if location_id:
                 item_row.markdown(item_html, unsafe_allow_html=True)
                 if length % 3 == 1:
                     with buttons[4]:
-                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,id,description,price,person,))
+                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,id,description,size,price,person,))
                 else:
                     with buttons[i * 4 + 2]:
-                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,id,description,price,person,))
+                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,id,description,size,price,person,))
 
     table = st.data_editor(df, num_rows='dynamic', use_container_width=True, hide_index=True, column_config={
         "price": st.column_config.NumberColumn(format="%.2f"),
@@ -118,6 +118,11 @@ if location_id:
         row2.button(label='Add to Cart', on_click=authenticate)
 
         if fees and savings:
-            row2.button("To Splitwise", on_click=post_order_script, args=(table,fees,savings,))
+            row2.button("To Splitwise", on_click=post_order_script, args=(table,fees,savings,True,))
+    else:
+        show_total = row2.button(label='Show Totals')
+        if show_total:
+            totals = post_order_script(table,0,0,False)
+            st.write(totals)
 
 
