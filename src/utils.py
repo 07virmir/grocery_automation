@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
 import webbrowser
+import streamlit as st
 
 def authenticate():
     """
@@ -12,7 +13,7 @@ def authenticate():
     """
     webbrowser.open("http://127.0.0.1:8000")
 
-def post_order_script(table, tax, savings):
+def post_order_script(table, tax=0, savings=0, toSplitwise=True):
     """
     Calulates the totals and posts the order to Splitwise
     """
@@ -47,20 +48,31 @@ def post_order_script(table, tax, savings):
 
     total = sum(totals_per_person.values())
 
-    for person in totals_per_person:
-        tax_added = (totals_per_person[person] / total) * float(tax)
-        savings_subtracted = (totals_per_person[person] / total) * float(savings)
-        totals_per_person[person] += tax_added
-        totals_per_person[person] -= savings_subtracted
-        totals_per_person[person] = math.ceil(totals_per_person[person] * 100) / 100
+    if toSplitwise:
+        for person in totals_per_person:
+            tax_added = (totals_per_person[person] / total) * float(tax)
+            savings_subtracted = (totals_per_person[person] / total) * float(savings)
+            totals_per_person[person] += tax_added
+            totals_per_person[person] -= savings_subtracted
+            totals_per_person[person] = math.ceil(totals_per_person[person] * 100) / 100
 
-    print("\n")
-    for person in items_per_person:
-        print(f"{person}: {items_per_person[person]}" + "\n")
+        print("\n")
+        for person in items_per_person:
+            print(f"{person}: {items_per_person[person]}" + "\n")
 
-    print(f"Totals: {totals_per_person}" + "\n")
+        print(f"Totals: {totals_per_person}" + "\n")
 
-    make_splitwise_request(totals_per_person)
+        make_splitwise_request(totals_per_person)
+        return None
+
+    else:
+        formatted_totals = {}
+    
+        for person, total in totals_per_person.items():
+            formatted_total = round(total, 2)
+            formatted_totals[person] = formatted_total
+        
+        return formatted_totals
 
 
 def make_splitwise_request(totals_per_person: dict):
@@ -177,8 +189,8 @@ def save_data(table, location_id):
     headers = {"Content-Type": "application/json"}
     requests.post("http://127.0.0.1:8000/save_changes", data=json.dumps(info), headers=headers)
 
-def add_row(df, location_id, id, description, price, person):
-    newRow = {"id": [id], "name": [description], "price": [price], "quantity": [1], "Viren": [True if person =='Viren' else False], "Rishi": [True if person =='Rishi' else False], "Siddharth": [True if person =='Siddharth' else False], "Rohan": [True if person =='Rohan' else False], "Christopher": [True if person =='Christopher' else False]}
+def add_row(df, location_id, id, description, size, price, person):
+    newRow = {"id": [id], "name": [description + ' - ' + size], "price": [price], "quantity": [1], "Viren": [True if person =='Viren' else False], "Rishi": [True if person =='Rishi' else False], "Siddharth": [True if person =='Siddharth' else False], "Rohan": [True if person =='Rohan' else False], "Christopher": [True if person =='Christopher' else False]}
     df2 = pd.DataFrame(newRow)
     df = pd.concat([df, df2], ignore_index=True)
     df.reset_index()
