@@ -2,3 +2,4 @@
 .venv/
 src/__pycache__/
 credentials/
+.DS_Store

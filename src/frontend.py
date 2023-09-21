@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_extras.row import row
-import requests, json, pandas as pd
+import requests
 from utils import make_df, save_data, post_order_script, authenticate, add_row
 
 items = requests.get("http://127.0.0.1:8000/get_items").json()
@@ -124,5 +124,3 @@ if location_id:
         if show_total:
             totals = post_order_script(table,0,0,False)
             st.write(totals)
-
-

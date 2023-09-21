@@ -112,7 +112,7 @@ def search_kroger():
     Searches the Kroger API for the item
     """
 
-    requests.post("http://127.0.0.1:8000/refresh_token")
+    requests.post(url_for('refresh_token', _external=True))
 
     item = request.args.get('item')
     locationId = request.args.get('locationId')
@@ -154,7 +154,7 @@ def get_locations():
         Gets the nearest locations for the specified zip code
         """
 
-        requests.post("http://127.0.0.1:8000/refresh_token")
+        requests.post(url_for('refresh_token', _external=True))
 
         zip_code = request.args.get('zip_code')
 
@@ -183,4 +183,4 @@ def get_locations():
             return None
 
 if __name__ == "__main__":
-    app.run(port=8000, debug=True)
+    app.run(port=8000)
