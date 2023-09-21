@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
 import webbrowser
-import streamlit as st
 
 def authenticate():
     """
