@@ -94,10 +94,10 @@ if location_id:
                 item_row.markdown(item_html, unsafe_allow_html=True)
                 if length % 3 == 1:
                     with buttons[4]:
-                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,id,description,size,price,person,))
+                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,location_id,id,description,size,price,person,))
                 else:
                     with buttons[i * 4 + 2]:
-                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,id,description,size,price,person,))
+                        st.button(f"Add Item {3 * numRows + i + 1}", on_click=add_row, args=(df,location_id,id,description,size,price,person,))
 
     table = st.data_editor(df, num_rows='dynamic', use_container_width=True, hide_index=True, column_config={
         "price": st.column_config.NumberColumn(format="%.2f"),
