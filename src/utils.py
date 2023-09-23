@@ -1,4 +1,4 @@
-import os, base64, requests, datetime, json, math
+import os, requests, datetime, json, math
 import pandas as pd
 import numpy as np
 from dotenv import load_dotenv
@@ -115,33 +115,6 @@ def make_splitwise_request(totals_per_person: dict):
             s_obj.createExpense(expense)
 
             print(f"Created expense for {person} for ${totals_per_person[person]}")
-
-
-def get_kroger_access_token():
-        """
-        Gets the access token for the Kroger API
-        """
-
-        load_dotenv()
-        CLIENT_ID = os.environ.get("KROGER_CLIENT_ID")
-        CLIENT_SECRET = os.environ.get("KROGER_CLIENT_SECRET")
-
-        url = "https://api.kroger.com/v1/connect/oauth2/token"
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": f"Basic {base64.b64encode((CLIENT_ID + ':' + CLIENT_SECRET).encode()).decode()}"
-        }
-        data = {
-            "grant_type": "client_credentials",
-            "scope": "product.compact"
-        }
-
-        response = requests.post(url, headers=headers, data=data)
-
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
 
 
 def make_df(items, members):

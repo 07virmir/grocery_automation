@@ -1,8 +1,7 @@
 from flask import Flask, jsonify, request, redirect, url_for
 from authlib.integrations.flask_client import OAuth
 from datetime import datetime, timedelta
-import requests, os
-from utils import get_kroger_access_token
+import requests, base64, os
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -20,7 +19,7 @@ oauth.register(
     access_token_params=None,
     authorize_url='https://api.kroger.com/v1/connect/oauth2/authorize',
     authorize_params=None,
-    api_base_url='https://api.kroger.com/v1/connect/oauth2',
+    api_base_url='https://api.kroger.com/v1/',
     client_kwargs={'scope': 'product.compact profile.compact cart.basic:write'}
 )
 
@@ -56,6 +55,32 @@ def add_to_cart_script():
         "Authorization": f"Bearer {add_to_cart_token}"
     }
     requests.put(url=url, headers=headers, json=items)
+
+def get_kroger_access_token():
+    """
+    Gets the access token for the Kroger API
+    """
+
+    load_dotenv()
+    CLIENT_ID = os.environ.get("KROGER_CLIENT_ID")
+    CLIENT_SECRET = os.environ.get("KROGER_CLIENT_SECRET")
+
+    url = "https://api.kroger.com/v1/connect/oauth2/token"
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": f"Basic {base64.b64encode((CLIENT_ID + ':' + CLIENT_SECRET).encode()).decode()}"
+    }
+    data = {
+        "grant_type": "client_credentials",
+        "scope": "product.compact"
+    }
+
+    response = requests.post(url, headers=headers, data=data)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return "", response.status_code
 
 @app.route("/")
 def home():
@@ -146,7 +171,7 @@ def search_kroger():
             item_info[idx]["size"] = item["items"][0]["size"]
         return jsonify(item_info)
     else:
-        return None
+        return "", response.status_code
 
 @app.route("/get_locations", methods=['GET'])
 def get_locations():
@@ -180,7 +205,7 @@ def get_locations():
                 location_info[location["locationId"]]["name"] = location["name"]
             return jsonify(location_info)
         else: 
-            return None
+            return "", response.status_code
 
 if __name__ == "__main__":
     app.run(port=8000)
