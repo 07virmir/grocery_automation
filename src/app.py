@@ -33,8 +33,9 @@ members = ["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"]
 def set_access_token():
     global access_token, expiry_time
     api_result = get_kroger_access_token()
-    access_token = api_result["access_token"]
-    expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
+    if api_result is not None:
+        access_token = api_result["access_token"]
+        expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
 
 def add_to_cart_script():
     """
@@ -80,7 +81,7 @@ def get_kroger_access_token():
     if response.status_code == 200:
         return response.json()
     else:
-        return "", response.status_code
+        return None
 
 @app.route("/")
 def home():
@@ -139,6 +140,9 @@ def search_kroger():
 
     requests.post(url_for('refresh_token', _external=True))
 
+    if access_token is None:
+            return "", 204
+
     item = request.args.get('item')
     locationId = request.args.get('locationId')
     limit = request.args.get('limit')
@@ -180,6 +184,9 @@ def get_locations():
         """
 
         requests.post(url_for('refresh_token', _external=True))
+
+        if access_token is None:
+            return "", 204
 
         zip_code = request.args.get('zip_code')
 
