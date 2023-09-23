@@ -32,10 +32,11 @@ members = ["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"]
 
 def set_access_token():
     global access_token, expiry_time
-    api_result = get_kroger_access_token()
-    if api_result is not None:
-        access_token = api_result["access_token"]
-        expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
+    if expiry_time is None or datetime.now() > expiry_time:
+        api_result = get_kroger_access_token()
+        if api_result is not None:
+            access_token = api_result["access_token"]
+            expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
 
 def add_to_cart_script():
     """
@@ -99,16 +100,6 @@ def authorize():
     add_to_cart_script()
     return "Order added to cart"
 
-@app.route("/refresh_token", methods=['POST'])
-def refresh_token():
-    """
-    Initializes the token
-    """
-    global access_token, expiry_time
-    if expiry_time is None or datetime.now() > expiry_time:
-        set_access_token()
-    return "", 204
-
 @app.route("/get_items", methods=['GET'])
 def get_items():
     """
@@ -138,7 +129,7 @@ def search_kroger():
     Searches the Kroger API for the item
     """
 
-    requests.post(url_for('refresh_token', _external=True))
+    set_access_token()
 
     if access_token is None:
             return "", 204
@@ -183,7 +174,7 @@ def get_locations():
         Gets the nearest locations for the specified zip code
         """
 
-        requests.post(url_for('refresh_token', _external=True))
+        set_access_token()
 
         if access_token is None:
             return "", 204
