@@ -63,7 +63,6 @@ def get_kroger_access_token():
     Gets the access token for the Kroger API
     """
 
-    load_dotenv()
     CLIENT_ID = os.environ.get("KROGER_CLIENT_ID")
     CLIENT_SECRET = os.environ.get("KROGER_CLIENT_SECRET")
 
