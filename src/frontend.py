@@ -13,7 +13,7 @@ with row1col1:
 with row1col2:
     location_id = st.text_input("Enter a location ID", value=items["locationId"])
 with row1col3:
-    person = st.selectbox("Who is editing?", options=["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"])
+    person = st.selectbox("Who is editing?", options=["Select User", "Viren", "Rishi", "Siddharth", "Rohan", "Christopher"])
 
 if location and not location_id:
     params = {
@@ -38,7 +38,7 @@ if location and not location_id:
         else:
             location_row2.markdown(box_html, unsafe_allow_html=True)
 
-if location_id:
+if location_id and person != "Select User":
     row2col1, row2col2 = st.columns([3, 1], gap="medium")
 
     with row2col1:
@@ -103,19 +103,19 @@ if location_id:
         "price": st.column_config.NumberColumn(format="%.2f"),
         "quantity": st.column_config.NumberColumn(default=1, min_value=1),
         "Viren": st.column_config.CheckboxColumn(disabled=False if person == 'Viren' else True, default=False),
-        "Rishi": st.column_config.CheckboxColumn(disabled=False if person == 'Rishi' else True, default=False),
-        "Siddharth": st.column_config.CheckboxColumn(disabled=False if person == 'Siddharth' else True, default=False),
-        "Rohan": st.column_config.CheckboxColumn(disabled=False if person == 'Rohan' else True, default=False),
-        "Christopher": st.column_config.CheckboxColumn(disabled=False if person == 'Christopher' else True, default=False)
+        "Rishi": st.column_config.CheckboxColumn(disabled=False if person == 'Rishi' or person == 'Viren' else True, default=False),
+        "Siddharth": st.column_config.CheckboxColumn(disabled=False if person == 'Siddharth' or person == 'Viren' else True, default=False),
+        "Rohan": st.column_config.CheckboxColumn(disabled=False if person == 'Rohan' or person == 'Viren' else True, default=False),
+        "Christopher": st.column_config.CheckboxColumn(disabled=False if person == 'Christopher' or person == 'Viren' else True, default=False)
     })
 
-    row2 = row([6, 6, 6, 5, 5], gap="small", vertical_align="bottom")
+    row2 = row([6, 5, 6, 6, 5], gap="small", vertical_align="bottom")
     row2.button(label='Save Changes', on_click=save_data, args=(table,location_id,))
 
     if person == 'Viren':
+        row2.button(label='Add to Cart', on_click=authenticate)
         fees = row2.text_input("Fees")
         savings = row2.text_input("Savings")
-        row2.button(label='Add to Cart', on_click=authenticate)
 
         if fees and savings:
             row2.button("To Splitwise", on_click=post_order_script, args=(table,fees,savings,True,))

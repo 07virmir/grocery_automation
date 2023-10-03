@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
 import webbrowser
+import streamlit as st
 
 def authenticate():
     """
@@ -162,6 +163,9 @@ def save_data(table, location_id):
     requests.post("http://127.0.0.1:8000/save_changes", data=json.dumps(info), headers=headers)
 
 def add_row(df, location_id, id, description, size, price, person):
+    if id in df['id'].values:
+        st.warning("Item already in table")
+        return
     newRow = {"id": [id], "name": [description + ' - ' + size], "price": [price], "quantity": [1], "Viren": [True if person =='Viren' else False], "Rishi": [True if person =='Rishi' else False], "Siddharth": [True if person =='Siddharth' else False], "Rohan": [True if person =='Rohan' else False], "Christopher": [True if person =='Christopher' else False]}
     df2 = pd.DataFrame(newRow)
     df = pd.concat([df, df2], ignore_index=True)
