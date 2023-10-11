@@ -117,6 +117,7 @@ def get_items():
     Returns the list of items
     """
     data = list(db.collection("grocery_data").document("table_data").get().to_dict().values())
+    data.sort(key=lambda x: x["name"])
     locationId = db.collection("grocery_data").document("location_id").get().to_dict()
     if not locationId:
         locationId = ""
