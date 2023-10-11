@@ -121,7 +121,7 @@ def make_splitwise_request(totals_per_person: dict):
 def make_df(items, members):
     ''' Formats the data for streamlit to display 
     Args:
-        items : list[{id: str, name: str, price: int, split_by: list[str]}]
+        items : list[{id: str, name: str, price: int, quantity: int, split_by: list[str]}]
         members: list[str]
     Returns: 
         pd.Dataframe: with item id as index column. Forces use of hide_index in st.data_editor

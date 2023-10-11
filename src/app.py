@@ -4,12 +4,19 @@ from datetime import datetime, timedelta
 import requests, base64, os
 from flask_cors import CORS
 from dotenv import load_dotenv
+import firebase_admin
+from firebase_admin import credentials, firestore
+
 
 app = Flask(__name__)
 CORS(app)
 app.secret_key = 'test'
-
 load_dotenv()
+
+cred = credentials.Certificate("../credentials/firebase_credentials.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
 oauth = OAuth(app)
 oauth.register(
     name='kroger',
@@ -26,9 +33,6 @@ oauth.register(
 access_token = None
 add_to_cart_token = None
 expiry_time = None
-data = []
-locationId = ""
-members = ["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"]
 
 def set_access_token():
     global access_token, expiry_time
@@ -42,8 +46,8 @@ def add_to_cart_script():
     """
     Adds the items to the cart
     """
-    global data
     items = {"items": []}
+    data = list(db.collection("grocery_data").document("table_data").get().to_dict().values())
     for item in data:
         items["items"].append({
             "quantity": int(item["quantity"]),
@@ -104,6 +108,14 @@ def get_items():
     """
     Returns the list of items
     """
+    data = list(db.collection("grocery_data").document("table_data").get().to_dict().values())
+    locationId = db.collection("grocery_data").document("location_id").get().to_dict()
+    if not locationId:
+        locationId = ""
+    else:
+        locationId = locationId["locationId"]
+    members = ["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"]
+
     info = {
         "data": data,
         "members": members,
@@ -116,9 +128,14 @@ def save_changes():
     """
     Saves the changes to the backend
     """
-    global data, locationId
-    data = request.get_json()["data"]
-    locationId = request.get_json()["locationId"]
+    keys = set()
+    for item in request.get_json()["data"]:
+        db.collection("grocery_data").document("table_data").update({item["id"]: item})
+        keys.add(item["id"])
+    for key in db.collection("grocery_data").document("table_data").get().to_dict().keys():
+        if key not in keys:
+            db.collection("grocery_data").document("table_data").update({key: firestore.DELETE_FIELD})
+    db.collection("grocery_data").document("location_id").update({"locationId": request.get_json()["locationId"]})
     
     return "", 204
 
@@ -205,4 +222,4 @@ def get_locations():
             return "", response.status_code
 
 if __name__ == "__main__":
-    app.run(port=8000)
+    app.run(port=8000, debug=True)
