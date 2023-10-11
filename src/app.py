@@ -1,19 +1,27 @@
 from flask import Flask, jsonify, request, redirect, url_for
 from authlib.integrations.flask_client import OAuth
 from datetime import datetime, timedelta
-import requests, base64, os
+import requests, base64, os, json
 from flask_cors import CORS
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
-
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 
 app = Flask(__name__)
 CORS(app)
 app.secret_key = 'test'
 load_dotenv()
 
-cred = credentials.Certificate("../credentials/firebase_credentials.json")
+vault_url = os.environ.get("VAULT_URL")
+secret_name = os.environ.get("VAULT_SECRET_NAME")
+credential = DefaultAzureCredential()
+secret_client = SecretClient(vault_url=vault_url, credential=credential)
+retrieved_secret = secret_client.get_secret(secret_name)
+secret_value = retrieved_secret.value
+
+cred = credentials.Certificate(json.loads(secret_value))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
