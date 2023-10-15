@@ -1,10 +1,11 @@
-import os, base64, requests, datetime, json, math
+import os, requests, datetime, json, math
 import pandas as pd
 import numpy as np
 from dotenv import load_dotenv
 from splitwise import Splitwise
 from splitwise.expense import Expense, ExpenseUser
 import webbrowser
+import streamlit as st
 
 def authenticate():
     """
@@ -117,37 +118,10 @@ def make_splitwise_request(totals_per_person: dict):
             print(f"Created expense for {person} for ${totals_per_person[person]}")
 
 
-def get_kroger_access_token():
-        """
-        Gets the access token for the Kroger API
-        """
-
-        load_dotenv()
-        CLIENT_ID = os.environ.get("KROGER_CLIENT_ID")
-        CLIENT_SECRET = os.environ.get("KROGER_CLIENT_SECRET")
-
-        url = "https://api.kroger.com/v1/connect/oauth2/token"
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": f"Basic {base64.b64encode((CLIENT_ID + ':' + CLIENT_SECRET).encode()).decode()}"
-        }
-        data = {
-            "grant_type": "client_credentials",
-            "scope": "product.compact"
-        }
-
-        response = requests.post(url, headers=headers, data=data)
-
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
-
-
 def make_df(items, members):
     ''' Formats the data for streamlit to display 
     Args:
-        items : list[{id: str, name: str, price: int, split_by: list[str]}]
+        items : list[{id: str, name: str, price: int, quantity: int, split_by: list[str]}]
         members: list[str]
     Returns: 
         pd.Dataframe: with item id as index column. Forces use of hide_index in st.data_editor
@@ -189,6 +163,9 @@ def save_data(table, location_id):
     requests.post("http://127.0.0.1:8000/save_changes", data=json.dumps(info), headers=headers)
 
 def add_row(df, location_id, id, description, size, price, person):
+    if id in df['id'].values:
+        st.warning("Item already in table")
+        return
     newRow = {"id": [id], "name": [description + ' - ' + size], "price": [price], "quantity": [1], "Viren": [True if person =='Viren' else False], "Rishi": [True if person =='Rishi' else False], "Siddharth": [True if person =='Siddharth' else False], "Rohan": [True if person =='Rohan' else False], "Christopher": [True if person =='Christopher' else False]}
     df2 = pd.DataFrame(newRow)
     df = pd.concat([df, df2], ignore_index=True)

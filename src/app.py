@@ -1,16 +1,30 @@
 from flask import Flask, jsonify, request, redirect, url_for
 from authlib.integrations.flask_client import OAuth
 from datetime import datetime, timedelta
-import requests, os
-from utils import get_kroger_access_token
+import requests, base64, os, json
 from flask_cors import CORS
 from dotenv import load_dotenv
+import firebase_admin
+from firebase_admin import credentials, firestore
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 
 app = Flask(__name__)
 CORS(app)
 app.secret_key = 'test'
-
 load_dotenv()
+
+vault_url = os.environ.get("VAULT_URL")
+secret_name = os.environ.get("VAULT_SECRET_NAME")
+credential = DefaultAzureCredential()
+secret_client = SecretClient(vault_url=vault_url, credential=credential)
+retrieved_secret = secret_client.get_secret(secret_name)
+secret_value = retrieved_secret.value
+
+cred = credentials.Certificate(json.loads(secret_value))
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
 oauth = OAuth(app)
 oauth.register(
     name='kroger',
@@ -20,29 +34,28 @@ oauth.register(
     access_token_params=None,
     authorize_url='https://api.kroger.com/v1/connect/oauth2/authorize',
     authorize_params=None,
-    api_base_url='https://api.kroger.com/v1/connect/oauth2',
+    api_base_url='https://api.kroger.com/v1/',
     client_kwargs={'scope': 'product.compact profile.compact cart.basic:write'}
 )
 
 access_token = None
 add_to_cart_token = None
 expiry_time = None
-data = []
-locationId = ""
-members = ["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"]
 
 def set_access_token():
     global access_token, expiry_time
-    api_result = get_kroger_access_token()
-    access_token = api_result["access_token"]
-    expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
+    if expiry_time is None or datetime.now() > expiry_time:
+        api_result = get_kroger_access_token()
+        if api_result is not None:
+            access_token = api_result["access_token"]
+            expiry_time = datetime.now() + timedelta(seconds=api_result["expires_in"])
 
 def add_to_cart_script():
     """
     Adds the items to the cart
     """
-    global data
     items = {"items": []}
+    data = list(db.collection("grocery_data").document("table_data").get().to_dict().values())
     for item in data:
         items["items"].append({
             "quantity": int(item["quantity"]),
@@ -56,6 +69,31 @@ def add_to_cart_script():
         "Authorization": f"Bearer {add_to_cart_token}"
     }
     requests.put(url=url, headers=headers, json=items)
+
+def get_kroger_access_token():
+    """
+    Gets the access token for the Kroger API
+    """
+
+    CLIENT_ID = os.environ.get("KROGER_CLIENT_ID")
+    CLIENT_SECRET = os.environ.get("KROGER_CLIENT_SECRET")
+
+    url = "https://api.kroger.com/v1/connect/oauth2/token"
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": f"Basic {base64.b64encode((CLIENT_ID + ':' + CLIENT_SECRET).encode()).decode()}"
+    }
+    data = {
+        "grant_type": "client_credentials",
+        "scope": "product.compact"
+    }
+
+    response = requests.post(url, headers=headers, data=data)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
 
 @app.route("/")
 def home():
@@ -73,21 +111,20 @@ def authorize():
     add_to_cart_script()
     return "Order added to cart"
 
-@app.route("/refresh_token", methods=['POST'])
-def refresh_token():
-    """
-    Initializes the token
-    """
-    global access_token, expiry_time
-    if expiry_time is None or datetime.now() > expiry_time:
-        set_access_token()
-    return "", 204
-
 @app.route("/get_items", methods=['GET'])
 def get_items():
     """
     Returns the list of items
     """
+    data = list(db.collection("grocery_data").document("table_data").get().to_dict().values())
+    data.sort(key=lambda x: x["name"])
+    locationId = db.collection("grocery_data").document("location_id").get().to_dict()
+    if not locationId:
+        locationId = ""
+    else:
+        locationId = locationId["locationId"]
+    members = ["Viren", "Rishi", "Siddharth", "Rohan", "Christopher"]
+
     info = {
         "data": data,
         "members": members,
@@ -100,9 +137,14 @@ def save_changes():
     """
     Saves the changes to the backend
     """
-    global data, locationId
-    data = request.get_json()["data"]
-    locationId = request.get_json()["locationId"]
+    keys = set()
+    for item in request.get_json()["data"]:
+        db.collection("grocery_data").document("table_data").update({item["id"]: item})
+        keys.add(item["id"])
+    for key in db.collection("grocery_data").document("table_data").get().to_dict().keys():
+        if key not in keys:
+            db.collection("grocery_data").document("table_data").update({key: firestore.DELETE_FIELD})
+    db.collection("grocery_data").document("location_id").update({"locationId": request.get_json()["locationId"]})
     
     return "", 204
 
@@ -112,7 +154,10 @@ def search_kroger():
     Searches the Kroger API for the item
     """
 
-    requests.post(url_for('refresh_token', _external=True))
+    set_access_token()
+
+    if access_token is None:
+            return "", 204
 
     item = request.args.get('item')
     locationId = request.args.get('locationId')
@@ -146,7 +191,7 @@ def search_kroger():
             item_info[idx]["size"] = item["items"][0]["size"]
         return jsonify(item_info)
     else:
-        return None
+        return "", response.status_code
 
 @app.route("/get_locations", methods=['GET'])
 def get_locations():
@@ -154,7 +199,10 @@ def get_locations():
         Gets the nearest locations for the specified zip code
         """
 
-        requests.post(url_for('refresh_token', _external=True))
+        set_access_token()
+
+        if access_token is None:
+            return "", 204
 
         zip_code = request.args.get('zip_code')
 
@@ -180,7 +228,7 @@ def get_locations():
                 location_info[location["locationId"]]["name"] = location["name"]
             return jsonify(location_info)
         else: 
-            return None
+            return "", response.status_code
 
 if __name__ == "__main__":
-    app.run(port=8000)
+    app.run(port=8000, debug=True)
