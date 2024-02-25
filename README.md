@@ -1,6 +1,7 @@
 # Grocery Automation
 Personal Project to automate grocery ordering for your nearby Kroger.
 
+## How the App Works
 App works by allowing users to collaboratively work on a grocery list. Users can set a location for a nearby Kroger by entering their zip code. Then, users can search for items with a limit parameter for the output and add them with a click of a button. Users can also select the quantity they want and split specific items amongst each other. Users can visualize their total expected cost at any point. Once final changes are made, the buyer can automatically add all items to their Kroger cart by signing into their account. With Splitwise integration, the buyer can also enter the total fees from the order and the per-person amounts will automatically be added as expenses on Splitwise.
 
 ## Tech Stack
