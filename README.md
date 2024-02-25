@@ -11,6 +11,10 @@ App works by allowing users to collaboratively work on a grocery list. Users can
 - Kroger API for location-based store selection, item search, automatic store selection
 - Splitwise API for expense tracking
 
+## Hosting
+- Hosted the frontend using Streamlit Community Cloud
+- Hosted the backend using Azure App Service and Key Vault
+
 ## Instructions
 To run the frontend, use "streamlit run frontend.py".  
 To run the backend, use "python3 app.py".
