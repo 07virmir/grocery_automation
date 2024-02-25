@@ -12,7 +12,7 @@ App works by allowing users to collaboratively work on a grocery list. Users can
 - Splitwise API for expense tracking
 
 ## Instructions
-To run the frontend, use "streamlit run frontend.py".
+To run the frontend, use "streamlit run frontend.py".  
 To run the backend, use "python3 app.py".
 
 To have multiple users edit concurrently, consider deploying or hosting an ngrok tunnel for the frontend.
