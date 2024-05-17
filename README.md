@@ -17,6 +17,18 @@ App works by allowing users to collaboratively work on a grocery list. Users can
 - Hosted the backend using Azure App Service and Key Vault
 
 ## Instructions
+To run the app, you will need to set up a `.env` file with the following variables:
+SPLITWISE_CONSUMER_KEY
+SPLITWISE_CONSUMER_SECRET
+SPLITWISE_API_KEY
+KROGER_CLIENT_ID
+KROGER_CLIENT_SECRET
+SHEETS_URL
+VAULT_URL
+VAULT_SECRET_NAME
+
+You can use az login to login to your Azure account before running the backend.
+
 To run the frontend, use "streamlit run frontend.py".  
 To run the backend, use "python3 app.py".
 
